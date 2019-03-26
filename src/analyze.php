@@ -2,6 +2,7 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Wikimedia\Cyclotron\Graph;
+use Wikimedia\Cyclotron\JohnsonCycles;
 use Wikimedia\Cyclotron\KosarajuComponents;
 
 
@@ -28,6 +29,8 @@ $file = $argv[1] ?? null;
 
 $edges = readEdges( $file );
 $graph = graph::newFromEdges( $edges );
+
+/*
 $kosaranju = new KosarajuComponents( $graph );
 $components = $kosaranju->getComponentSubgraphs();
 
@@ -36,3 +39,9 @@ foreach ( $components as $c ) {
 	print $c;
 	print "---------\n";
 }
+*/
+
+$johnson = new JohnsonCycles( $graph ) ;
+$cycles = $johnson->getCycles();
+
+print_r( $cycles );

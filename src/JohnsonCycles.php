@@ -9,6 +9,7 @@ class JohnsonCycles {
 
 	private $graph;
 
+	private $stack;
 	private $blocked;
 	private $blockLists;
 
@@ -17,50 +18,40 @@ class JohnsonCycles {
 	public function __construct( Graph $graph ) {
 		$this->graph = $graph;
 
+		$this->stack = [];
 		$this->blocked = [];
 		$this->blockLists = [];
-		$this->cycles = [];
-	}
-
-	public function getCycles() {
-		if ( $this->cycles !== null ) {
-			return $this->cycles;
-		}
-		$this->cycles = [];
-
-		$stack = [];
-		$s = 1;
-
-		return $this->cycles;
 	}
 
 	private function unblock( $v ) {
 		unset( $this->blocked[ $v ] );
-		foreach ( $this->blockLists[$v] ?? [] as $w ) {
-			if ( $this->blocked[ $w ] ?? false ) {
-				$this->unblock( $w );
+		if ( isset( $this->blockLists[$v] ) ) {
+			foreach ( array_keys( $this->blockLists[$v] ) as $w ) {
+				if ( $this->blocked[ $w ] ?? false ) {
+					$this->unblock( $w );
+				}
 			}
 		}
 		unset( $this->blockLists[$v] );
 	}
 
-	private function cycle( Graph $comp, $v, $s, array &$stack ) {
-		if ( !$comp->getVertices() ) {
+	private function cycle( Graph $g, $v, $s ) {
+		if ( !$g->getVertices() ) {
 			return false;
 		}
 
 		$f = false;
-		$stack[] = $v;
+		$this->stack[] = $v;
 		$this->blocked[$v] = true;
 
-		foreach ( $comp->getOutNeighbours( $v ) as $w ) {
+		foreach ( $g->getOutNeighbours( $v ) as $w ) {
 			if ( $w === $s ) {
-				$stack[] = $s;
-				$this->cycles[] = array_values( $stack ); // copy
-				array_pop( $stack );
+				$cy = array_values( $this->stack );
+				$cy[] = $s;
+				$this->cycles[] = $cy; // copy
 				$f = true;
 			} elseif ( !isset( $this->blocked[$w] ) ) {
-				if ( $this->cycle( $comp, $w, $s, $stack ) ) {
+				if ( $this->cycle( $g, $w, $s ) ) {
 					$f = true;
 				}
 			}
@@ -69,10 +60,49 @@ class JohnsonCycles {
 		if ( $f ) {
 			$this->unblock( $v );
 		} else {
-			foreach ( $comp->getOutNeighbours( $v) as $w ) {
+			foreach ( $g->getOutNeighbours( $v) as $w ) {
 				$this->blockLists[$w][$v] = true;
 			}
 		}
+
+		array_pop( $this->stack );
+		return $f;
+	}
+
+	public function getCycles() {
+		if ( $this->cycles !== null ) {
+			return $this->cycles;
+		}
+
+		$this->cycles = [];
+
+		$subgraphs = ( new KosarajuComponents( $this->graph ) )->getComponentSubgraphs();
+
+		while ( $subgraphs ) {
+			/** @var Graph $g */
+			$g = array_shift( $subgraphs );
+
+			if ( $g->getSize() < 2 ) {
+				continue;
+			}
+
+			$vert = $g->getVertices();
+			$s = array_shift( $vert );
+
+			$this->stack = [];
+			$this->cycle( $g, $s, $s );
+
+			if ( $g->getSize() > 2 ) {
+				// $vert is missing $s, construct a subgraph with the remaining vertices
+				$h = Graph::newSubgraph( $vert, $g );
+
+				// get all the SCCs of the new subgraphs and put them into the work queue.
+				$sub = ( new KosarajuComponents( $h ) )->getComponentSubgraphs();
+				$subgraphs = array_merge( $subgraphs, $sub );
+			}
+		}
+
+		return $this->cycles;
 	}
 
 }

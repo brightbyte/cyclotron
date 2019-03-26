@@ -69,6 +69,13 @@ class Graph {
 	}
 
 	/**
+	 * @return int
+	 */
+	public function getSize() {
+		return count( $this->vertices );
+	}
+
+	/**
 	 * @param mixed $v
 	 *
 	 * @return string[]|int[]

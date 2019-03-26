@@ -30,6 +30,9 @@ class KosarajuComponents {
 		$this->roots = [];
 	}
 
+	/**
+	 * @return array[]
+	 */
 	public function getComponents() {
 		if ( $this->components !== null ) {
 			return $this->components;
@@ -53,6 +56,9 @@ class KosarajuComponents {
 		return $this->components;
 	}
 
+	/**
+	 * @return Graph[]
+	 */
 	public function getComponentSubgraphs() {
 		$components = $this->getComponents();
 		$subgraphs = [];
